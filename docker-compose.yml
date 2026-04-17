@@ -1,0 +1,48 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  backend:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      PRODUCT_MD_PATH: /app/product.md
+    volumes:
+      - ./product.md:/app/product.md:ro
+    ports: ["8000:8000"]
+    depends_on: [redis]
+
+  worker:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      PRODUCT_MD_PATH: /app/product.md
+      LEADS_DIR: /app/leads
+    volumes:
+      - ./product.md:/app/product.md:ro
+      - ./leads:/app/leads:ro
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+    depends_on: [redis]
+
+  beat:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      PRODUCT_MD_PATH: /app/product.md
+      LEADS_DIR: /app/leads
+    volumes:
+      - ./product.md:/app/product.md:ro
+      - ./leads:/app/leads:ro
+    command: celery -A app.celery_app beat --loglevel=info
+    depends_on: [redis]
+
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:8000
+    ports: ["3000:3000"]
+    depends_on: [backend]
