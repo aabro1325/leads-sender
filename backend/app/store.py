@@ -59,3 +59,5 @@ def append_event(lead_id: str, event: LeadEvent) -> None:
         return
     lead.events.append(event)
     save_lead(lead)
+
+

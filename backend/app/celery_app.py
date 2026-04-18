@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.signals import worker_ready
 
 from .config import settings
 
@@ -17,6 +18,12 @@ celery_app = Celery(
         "app.scanner",
     ],
 )
+
+@worker_ready.connect
+def on_worker_ready(**kwargs):
+    from .db import init_db
+    init_db()
+
 
 celery_app.conf.update(
     task_serializer="json",

@@ -1,3 +1,6 @@
+volumes:
+  app_data:
+
 services:
   redis:
     image: redis:7-alpine
@@ -11,6 +14,7 @@ services:
       PRODUCT_MD_PATH: /app/product.md
     volumes:
       - ./product.md:/app/product.md:ro
+      - app_data:/app/data
     ports: ["8000:8000"]
     depends_on: [redis]
 
@@ -24,6 +28,7 @@ services:
     volumes:
       - ./product.md:/app/product.md:ro
       - ./leads:/app/leads:ro
+      - app_data:/app/data
     command: celery -A app.celery_app worker --loglevel=info --concurrency=2
     depends_on: [redis]
 
@@ -37,6 +42,7 @@ services:
     volumes:
       - ./product.md:/app/product.md:ro
       - ./leads:/app/leads:ro
+      - app_data:/app/data
     command: celery -A app.celery_app beat --loglevel=info
     depends_on: [redis]
 

@@ -7,11 +7,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from .db import init_db
 from .events import GLOBAL_CHANNEL, LEAD_CHANNEL, subscribe
 from .pipeline import enqueue_lead
 from .store import get_lead, list_leads
 
 app = FastAPI(title="Lead Sender")
+init_db()
 
 app.add_middleware(
     CORSMiddleware,
