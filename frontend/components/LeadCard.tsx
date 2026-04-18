@@ -1,39 +1,118 @@
 "use client";
-import Link from "next/link";
-import type { Lead } from "@/lib/types";
+import { Check, Circle, Loader2, X } from "lucide-react";
+import type { Lead, LeadStatus } from "@/lib/types";
+import { STEPS } from "@/lib/types";
 import { cn, STATUS_COLORS } from "@/lib/utils";
 
-export function LeadCard({ lead }: { lead: Lead }) {
-  const name = [lead.first_name, lead.last_name].filter(Boolean).join(" ") || "Unknown lead";
+const STATUS_TO_STEP: Record<LeadStatus, string> = {
+  PENDING: "",
+  NORMALIZING: "normalize",
+  PERMUTING: "permute",
+  VERIFYING: "verify",
+  VERIFIED: "verify",
+  DEAD: "verify",
+  RESEARCHING: "research",
+  DRAFTING: "draft",
+  SENDING: "send",
+  SENT: "send",
+  FAILED: "",
+};
+
+const STEP_COLORS: Record<string, { active: string; done: string; error: string }> = {
+  normalize: { active: "bg-amber-800", done: "bg-emerald-800", error: "bg-red-800" },
+  permute: { active: "bg-amber-800", done: "bg-emerald-800", error: "bg-red-800" },
+  verify: { active: "bg-yellow-800", done: "bg-emerald-800", error: "bg-red-800" },
+  research: { active: "bg-coral-800", done: "bg-emerald-800", error: "bg-red-800" },
+  draft: { active: "bg-coral-800", done: "bg-emerald-800", error: "bg-red-800" },
+  send: { active: "bg-blue-800", done: "bg-emerald-800", error: "bg-red-800" },
+};
+
+export function LeadRow({
+  lead,
+  selected,
+  onClick,
+}: {
+  lead: Lead;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const name =
+    [lead.first_name, lead.last_name].filter(Boolean).join(" ") || "Unknown lead";
+  const activeStep = STATUS_TO_STEP[lead.status];
+  const isDead = lead.status === "DEAD";
+  const isDone = lead.status === "SENT";
+  const isFailed = lead.status === "FAILED";
+  const stepsWithEvents = new Set((lead.events ?? []).map((e) => e.step));
+
   return (
-    <Link
-      href={`/leads/${lead.id}`}
-      className="block rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 transition p-4"
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full text-left px-4 py-3 border-b border-stone-800/60 transition-colors",
+        selected ? "bg-stone-800/70" : "hover:bg-stone-900/60",
+      )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="font-semibold truncate">{name}</div>
-          <div className="text-zinc-400 text-sm truncate">
-            {lead.title || "—"} {lead.company && <>· {lead.company}</>}
-          </div>
-        </div>
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <span className="font-medium text-sm truncate text-stone-100">{name}</span>
         <span
           className={cn(
-            "text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0",
-            STATUS_COLORS[lead.status] ?? "bg-zinc-800",
+            "text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 font-medium",
+            STATUS_COLORS[lead.status] ?? "bg-stone-800",
           )}
         >
           {lead.status}
         </span>
       </div>
-      {lead.verified_email && (
-        <div className="mt-2 text-emerald-400 text-xs truncate">
-          ✓ {lead.verified_email}
-        </div>
-      )}
-      {lead.domain && (
-        <div className="mt-1 text-zinc-500 text-xs truncate">{lead.domain}</div>
-      )}
-    </Link>
+      <div className="text-stone-500 text-xs truncate mb-2">
+        {lead.title || ""} {lead.company && `at ${lead.company}`}
+      </div>
+      <div className="flex gap-1">
+        {STEPS.map((s) => {
+          const hasEvents = stepsWithEvents.has(s);
+          const isActive = s === activeStep && !isDone;
+          const errored =
+            (isDead && s === "verify") ||
+            (isFailed && s === activeStep) ||
+            (lead.events ?? []).some((e) => e.step === s && e.level === "error");
+          const done = hasEvents && !isActive && !errored;
+
+          const color = errored
+            ? STEP_COLORS[s]?.error ?? "bg-red-800"
+            : done
+              ? STEP_COLORS[s]?.done ?? "bg-emerald-800"
+              : isActive
+                ? STEP_COLORS[s]?.active ?? "bg-coral-800"
+                : "bg-stone-800";
+
+          return (
+            <span
+              key={s}
+              className={cn(
+                "flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium",
+                color,
+                errored
+                  ? "text-red-200"
+                  : done
+                    ? "text-emerald-200"
+                    : isActive
+                      ? "text-white"
+                      : "text-stone-600",
+              )}
+            >
+              {errored ? (
+                <X className="w-2.5 h-2.5" />
+              ) : isActive ? (
+                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+              ) : done ? (
+                <Check className="w-2.5 h-2.5" />
+              ) : (
+                <Circle className="w-2.5 h-2.5" />
+              )}
+              {s}
+            </span>
+          );
+        })}
+      </div>
+    </button>
   );
 }

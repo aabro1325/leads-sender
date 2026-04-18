@@ -30,7 +30,7 @@ export function StepTimeline({
   const isDone = status === "SENT";
 
   return (
-    <ol className="flex flex-wrap gap-2">
+    <div className="flex gap-1.5">
       {STEPS.map((s) => {
         const hasEvents = stepsWithEvents.has(s);
         const isActive = s === active && !isDone;
@@ -39,32 +39,32 @@ export function StepTimeline({
           events.some((e) => e.step === s && e.level === "error");
         const done = hasEvents && !isActive && !errored;
         return (
-          <li
+          <span
             key={s}
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs",
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-medium uppercase tracking-wide",
               errored
-                ? "bg-red-950/60 border-red-900 text-red-200"
+                ? "bg-red-950/60 border-red-900 text-red-300"
                 : done
-                ? "bg-emerald-950/40 border-emerald-900 text-emerald-200"
-                : isActive
-                ? "bg-violet-950/60 border-violet-800 text-violet-100"
-                : "bg-zinc-900 border-zinc-800 text-zinc-400",
+                  ? "bg-emerald-950/40 border-emerald-900 text-emerald-300"
+                  : isActive
+                    ? "bg-coral-950 border-coral-800 text-coral-200"
+                    : "bg-stone-900 border-stone-800 text-stone-500",
             )}
           >
             {errored ? (
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3 h-3" />
             ) : isActive ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="w-3 h-3 animate-spin" />
             ) : done ? (
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3 h-3" />
             ) : (
-              <Circle className="w-3.5 h-3.5" />
+              <Circle className="w-3 h-3" />
             )}
-            <span className="capitalize">{s}</span>
-          </li>
+            {s}
+          </span>
         );
       })}
-    </ol>
+    </div>
   );
 }
