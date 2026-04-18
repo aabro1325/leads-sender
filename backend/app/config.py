@@ -10,8 +10,6 @@ class Settings(BaseSettings):
     resend_from: str = "You <you@example.com>"
     redis_url: str = "redis://localhost:6379/0"
     product_md_path: str = "product.md"
-    leads_dir: str = "/app/leads"
-    scan_interval_seconds: int = 300
     db_path: str = "/app/data/leads.db"
 
 

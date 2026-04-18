@@ -21,4 +21,9 @@ export async function createLead(markdown: string): Promise<Lead> {
   return r.json();
 }
 
+export async function deleteLead(id: string): Promise<void> {
+  const r = await fetch(`${BASE}/api/leads/${id}`, { method: "DELETE" });
+  if (!r.ok) throw new Error(`delete failed: ${r.status}`);
+}
+
 export const STREAM_BASE = BASE;

@@ -1,5 +1,5 @@
 "use client";
-import { Check, Circle, Loader2, X } from "lucide-react";
+import { Check, Circle, Loader2, Trash2, X } from "lucide-react";
 import type { Lead, LeadStatus } from "@/lib/types";
 import { STEPS } from "@/lib/types";
 import { cn, STATUS_COLORS } from "@/lib/utils";
@@ -31,10 +31,12 @@ export function LeadRow({
   lead,
   selected,
   onClick,
+  onDelete,
 }: {
   lead: Lead;
   selected: boolean;
   onClick: () => void;
+  onDelete?: (id: string) => void;
 }) {
   const name =
     [lead.first_name, lead.last_name].filter(Boolean).join(" ") || "Unknown lead";
@@ -45,23 +47,48 @@ export function LeadRow({
   const stepsWithEvents = new Set((lead.events ?? []).map((e) => e.step));
 
   return (
-    <button
+    <div
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className={cn(
-        "w-full text-left px-4 py-3 border-b border-stone-800/60 transition-colors",
+        "group relative w-full text-left px-4 py-3 border-b border-stone-800/60 transition-colors cursor-pointer",
         selected ? "bg-stone-800/70" : "hover:bg-stone-900/60",
       )}
     >
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <span className="font-medium text-sm truncate text-stone-100">{name}</span>
-        <span
-          className={cn(
-            "text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 font-medium",
-            STATUS_COLORS[lead.status] ?? "bg-stone-800",
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span
+            className={cn(
+              "text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider font-medium",
+              STATUS_COLORS[lead.status] ?? "bg-stone-800",
+            )}
+          >
+            {lead.status}
+          </span>
+          {onDelete && (
+            <button
+              type="button"
+              aria-label="Delete lead"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm(`Delete lead "${name}"?`)) {
+                  onDelete(lead.id);
+                }
+              }}
+              className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-stone-500 hover:text-red-400 transition-opacity"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           )}
-        >
-          {lead.status}
-        </span>
+        </div>
       </div>
       <div className="text-stone-500 text-xs truncate mb-2">
         {lead.title || ""} {lead.company && `at ${lead.company}`}
@@ -113,6 +140,6 @@ export function LeadRow({
           );
         })}
       </div>
-    </button>
+    </div>
   );
 }

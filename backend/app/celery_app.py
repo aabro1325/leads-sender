@@ -15,7 +15,6 @@ celery_app = Celery(
         "app.steps.draft",
         "app.steps.send",
         "app.pipeline",
-        "app.scanner",
     ],
 )
 
@@ -31,10 +30,4 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     task_track_started=True,
-    beat_schedule={
-        "scan-leads-folder": {
-            "task": "scanner.scan_folder",
-            "schedule": float(settings.scan_interval_seconds),
-        },
-    },
 )

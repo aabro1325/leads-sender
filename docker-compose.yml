@@ -24,26 +24,10 @@ services:
     environment:
       REDIS_URL: redis://redis:6379/0
       PRODUCT_MD_PATH: /app/product.md
-      LEADS_DIR: /app/leads
     volumes:
       - ./product.md:/app/product.md:ro
-      - ./leads:/app/leads:ro
       - app_data:/app/data
     command: celery -A app.celery_app worker --loglevel=info --concurrency=2
-    depends_on: [redis]
-
-  beat:
-    build: ./backend
-    env_file: ./backend/.env
-    environment:
-      REDIS_URL: redis://redis:6379/0
-      PRODUCT_MD_PATH: /app/product.md
-      LEADS_DIR: /app/leads
-    volumes:
-      - ./product.md:/app/product.md:ro
-      - ./leads:/app/leads:ro
-      - app_data:/app/data
-    command: celery -A app.celery_app beat --loglevel=info
     depends_on: [redis]
 
   frontend:

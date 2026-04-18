@@ -10,7 +10,7 @@ from sse_starlette.sse import EventSourceResponse
 from .db import init_db
 from .events import GLOBAL_CHANNEL, LEAD_CHANNEL, subscribe
 from .pipeline import enqueue_lead
-from .store import get_lead, list_leads
+from .store import delete_lead, get_lead, list_leads
 
 app = FastAPI(title="Lead Sender")
 init_db()
@@ -46,6 +46,13 @@ async def api_create_lead(body: CreateLeadBody):
         raise HTTPException(400, "markdown cannot be empty")
     lead = enqueue_lead(body.markdown)
     return lead.model_dump(mode="json")
+
+
+@app.delete("/api/leads/{lead_id}")
+def api_delete_lead(lead_id: str):
+    if not delete_lead(lead_id):
+        raise HTTPException(404, "lead not found")
+    return {"ok": True, "id": lead_id}
 
 
 async def _sse(channel: str):

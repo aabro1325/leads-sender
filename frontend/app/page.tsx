@@ -4,7 +4,7 @@ import { Zap } from "lucide-react";
 import { LeadRow } from "@/components/LeadCard";
 import { LeadDetail } from "@/components/LeadDetail";
 import { UploadMd } from "@/components/UploadMd";
-import { listLeads, STREAM_BASE } from "@/lib/api";
+import { deleteLead, listLeads, STREAM_BASE } from "@/lib/api";
 import { useSSE } from "@/lib/sse";
 import type { Lead } from "@/lib/types";
 
@@ -20,6 +20,23 @@ export default function Dashboard() {
       setSelectedId(data[0].id);
     }
   }, [selectedId]);
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      try {
+        await deleteLead(id);
+      } catch (err) {
+        console.error(err);
+        return;
+      }
+      const data = await listLeads();
+      setLeads(data);
+      if (selectedId === id) {
+        setSelectedId(data.length > 0 ? data[0].id : null);
+      }
+    },
+    [selectedId],
+  );
 
   useEffect(() => {
     refresh();
@@ -75,6 +92,7 @@ export default function Dashboard() {
                 lead={l}
                 selected={l.id === selectedId}
                 onClick={() => setSelectedId(l.id)}
+                onDelete={handleDelete}
               />
             ))}
             {leads.length === 0 && (
