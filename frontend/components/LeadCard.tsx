@@ -1,10 +1,11 @@
 "use client";
-import { Check, Circle, Loader2, Trash2, X } from "lucide-react";
+import { Check, Circle, Clock, Loader2, Trash2, X } from "lucide-react";
 import type { Lead, LeadStatus } from "@/lib/types";
 import { STEPS } from "@/lib/types";
 import { cn, STATUS_COLORS } from "@/lib/utils";
 
 const STATUS_TO_STEP: Record<LeadStatus, string> = {
+  QUEUED: "",
   PENDING: "",
   NORMALIZING: "normalize",
   PERMUTING: "permute",
@@ -32,15 +33,18 @@ export function LeadRow({
   selected,
   onClick,
   onDelete,
+  queuePosition,
 }: {
   lead: Lead;
   selected: boolean;
   onClick: () => void;
   onDelete?: (id: string) => void;
+  queuePosition?: number;
 }) {
   const name =
     [lead.first_name, lead.last_name].filter(Boolean).join(" ") || "Unknown lead";
   const activeStep = STATUS_TO_STEP[lead.status];
+  const isQueued = lead.status === "QUEUED";
   const isDead = lead.status === "DEAD";
   const isDone = lead.status === "SENT";
   const isFailed = lead.status === "FAILED";
@@ -65,6 +69,11 @@ export function LeadRow({
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <span className="font-medium text-sm truncate text-stone-100">{name}</span>
         <div className="flex items-center gap-1.5 shrink-0">
+          {isQueued && queuePosition != null && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-stone-800 text-stone-400 font-mono tabular-nums">
+              #{queuePosition}
+            </span>
+          )}
           <span
             className={cn(
               "text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider font-medium",
@@ -94,7 +103,12 @@ export function LeadRow({
         {lead.title || ""} {lead.company && `at ${lead.company}`}
       </div>
       <div className="flex gap-1">
-        {STEPS.map((s) => {
+        {isQueued ? (
+          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-stone-800 text-stone-500">
+            <Clock className="w-2.5 h-2.5" />
+            waiting in queue
+          </span>
+        ) : (STEPS.map((s) => {
           const hasEvents = stepsWithEvents.has(s);
           const isActive = s === activeStep && !isDone;
           const errored =
@@ -138,7 +152,7 @@ export function LeadRow({
               {s}
             </span>
           );
-        })}
+        }))}
       </div>
     </div>
   );

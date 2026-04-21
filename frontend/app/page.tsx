@@ -4,18 +4,20 @@ import { Zap } from "lucide-react";
 import { LeadRow } from "@/components/LeadCard";
 import { LeadDetail } from "@/components/LeadDetail";
 import { UploadMd } from "@/components/UploadMd";
-import { deleteLead, listLeads, STREAM_BASE } from "@/lib/api";
+import { deleteLead, getQueueStats, listLeads, STREAM_BASE, type QueueStats } from "@/lib/api";
 import { useSSE } from "@/lib/sse";
 import type { Lead } from "@/lib/types";
 
 export default function Dashboard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [queueStats, setQueueStats] = useState<QueueStats | null>(null);
   const events = useSSE(`${STREAM_BASE}/api/stream`);
 
   const refresh = useCallback(async () => {
-    const data = await listLeads();
+    const [data, stats] = await Promise.all([listLeads(), getQueueStats()]);
     setLeads(data);
+    setQueueStats(stats);
     if (!selectedId && data.length > 0) {
       setSelectedId(data[0].id);
     }
@@ -62,9 +64,22 @@ export default function Dashboard() {
           <Zap className="w-5 h-5 text-coral-400" />
           <h1 className="text-lg font-bold tracking-tight">Lead Sender</h1>
         </div>
-        <span className="text-[10px] text-stone-500 tabular-nums">
-          {events.length} live events
-        </span>
+        <div className="flex items-center gap-3">
+          {queueStats && (
+            <div className="flex items-center gap-2 text-[10px] tabular-nums">
+              <span className={queueStats.active_count > 0 ? "text-emerald-400" : "text-stone-600"}>
+                {queueStats.active_count} active
+              </span>
+              <span className="text-stone-700">·</span>
+              <span className={queueStats.queued_count > 0 ? "text-stone-400" : "text-stone-600"}>
+                {queueStats.queued_count} queued
+              </span>
+            </div>
+          )}
+          <span className="text-[10px] text-stone-500 tabular-nums">
+            {events.length} events
+          </span>
+        </div>
       </header>
 
       <div className="flex-1 flex min-h-0">
@@ -86,15 +101,19 @@ export default function Dashboard() {
           />
 
           <div className="flex-1 overflow-y-auto">
-            {leads.map((l) => (
-              <LeadRow
-                key={l.id}
-                lead={l}
-                selected={l.id === selectedId}
-                onClick={() => setSelectedId(l.id)}
-                onDelete={handleDelete}
-              />
-            ))}
+            {leads.map((l) => {
+              const queueEntry = queueStats?.queue.find((q) => q.id === l.id);
+              return (
+                <LeadRow
+                  key={l.id}
+                  lead={l}
+                  selected={l.id === selectedId}
+                  onClick={() => setSelectedId(l.id)}
+                  onDelete={handleDelete}
+                  queuePosition={queueEntry?.position}
+                />
+              );
+            })}
             {leads.length === 0 && (
               <div className="p-4 text-stone-600 text-sm text-center">
                 No leads yet. Add one above.

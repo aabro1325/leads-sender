@@ -1,4 +1,5 @@
 export type LeadStatus =
+  | "QUEUED"
   | "PENDING"
   | "NORMALIZING"
   | "PERMUTING"

@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class LeadStatus(str, Enum):
+    QUEUED = "QUEUED"
     PENDING = "PENDING"
     NORMALIZING = "NORMALIZING"
     PERMUTING = "PERMUTING"

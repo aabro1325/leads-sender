@@ -6,6 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const STATUS_COLORS: Record<string, string> = {
+  QUEUED: "bg-stone-700 text-stone-400",
   PENDING: "bg-stone-700 text-stone-200",
   NORMALIZING: "bg-amber-900/80 text-amber-200",
   PERMUTING: "bg-amber-900/80 text-amber-200",

@@ -1,9 +1,10 @@
 "use client";
-import { Check, Circle, Loader2, X } from "lucide-react";
+import { Check, Circle, Clock, Loader2, X } from "lucide-react";
 import { STEPS, type LeadEvent, type LeadStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const STATUS_TO_STEP: Record<LeadStatus, string> = {
+  QUEUED: "",
   PENDING: "",
   NORMALIZING: "normalize",
   PERMUTING: "permute",
@@ -26,8 +27,18 @@ export function StepTimeline({
 }) {
   const active = STATUS_TO_STEP[status];
   const stepsWithEvents = new Set(events.map((e) => e.step));
+  const isQueued = status === "QUEUED";
   const isDead = status === "DEAD";
   const isDone = status === "SENT";
+
+  if (isQueued) {
+    return (
+      <div className="flex items-center gap-2 text-stone-500 text-[10px]">
+        <Clock className="w-3.5 h-3.5" />
+        <span>Waiting in queue — pipeline will start when the current lead finishes</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-1.5">

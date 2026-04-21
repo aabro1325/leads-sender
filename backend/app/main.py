@@ -9,6 +9,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from .db import init_db
 from .events import GLOBAL_CHANNEL, LEAD_CHANNEL, subscribe
+from .models import LeadStatus
 from .pipeline import enqueue_lead
 from .store import delete_lead, get_lead, list_leads
 
@@ -46,6 +47,35 @@ async def api_create_lead(body: CreateLeadBody):
         raise HTTPException(400, "markdown cannot be empty")
     lead = enqueue_lead(body.markdown)
     return lead.model_dump(mode="json")
+
+
+_ACTIVE_STATUSES = {
+    LeadStatus.PENDING,
+    LeadStatus.NORMALIZING,
+    LeadStatus.PERMUTING,
+    LeadStatus.VERIFYING,
+    LeadStatus.RESEARCHING,
+    LeadStatus.DRAFTING,
+    LeadStatus.SENDING,
+}
+
+
+@app.get("/api/queue")
+def api_queue_stats():
+    all_leads = list_leads(limit=500)
+    active = [l for l in all_leads if l.status in _ACTIVE_STATUSES]
+    queued = sorted(
+        [l for l in all_leads if l.status == LeadStatus.QUEUED],
+        key=lambda l: l.created_at,
+    )
+    return {
+        "active_count": len(active),
+        "queued_count": len(queued),
+        "queue": [
+            {"id": l.id, "position": i + 1, "first_name": l.first_name, "last_name": l.last_name, "company": l.company}
+            for i, l in enumerate(queued)
+        ],
+    }
 
 
 @app.delete("/api/leads/{lead_id}")

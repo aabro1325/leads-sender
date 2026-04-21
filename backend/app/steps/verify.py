@@ -50,6 +50,7 @@ def run(self, lead_id: str) -> str:
         update_lead(lead_id, status=LeadStatus.DEAD)
         emit(lead_id, "verify", "No deliverable address found — lead marked DEAD", level="warn")
         self.request.callbacks = None  # abort remainder of chain without error
+        celery_app.send_task("queue.advance")
         return lead_id
 
     update_lead(lead_id, verified_email=verified, status=LeadStatus.VERIFIED)

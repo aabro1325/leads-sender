@@ -68,7 +68,7 @@ Return JSON: {{"subject": "...", "body": "..."}}
         emit(lead_id, "draft", "token", data={"chunk": chunk})
 
     try:
-        parsed = json.loads(accumulated)
+        parsed, _ = json.JSONDecoder().raw_decode(accumulated.strip())
     except json.JSONDecodeError as e:
         emit(lead_id, "draft", f"Failed to parse draft JSON: {e}", level="error", data={"raw": accumulated})
         raise

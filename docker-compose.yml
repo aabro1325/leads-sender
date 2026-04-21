@@ -27,7 +27,7 @@ services:
     volumes:
       - ./product.md:/app/product.md:ro
       - app_data:/app/data
-    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=1
     depends_on: [redis]
 
   frontend:
