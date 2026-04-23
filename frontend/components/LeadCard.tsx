@@ -1,7 +1,9 @@
 "use client";
-import { Check, Circle, Clock, Loader2, Trash2, X } from "lucide-react";
+import { Check, Circle, Clock, Loader2, RotateCcw, Trash2, X } from "lucide-react";
+import { useState } from "react";
 import type { Lead, LeadStatus } from "@/lib/types";
 import { STEPS } from "@/lib/types";
+import { retryLead } from "@/lib/api";
 import { cn, STATUS_COLORS } from "@/lib/utils";
 
 const STATUS_TO_STEP: Record<LeadStatus, string> = {
@@ -41,6 +43,7 @@ export function LeadRow({
   onDelete?: (id: string) => void;
   queuePosition?: number;
 }) {
+  const [retrying, setRetrying] = useState(false);
   const name =
     [lead.first_name, lead.last_name].filter(Boolean).join(" ") || "Unknown lead";
   const activeStep = STATUS_TO_STEP[lead.status];
@@ -82,6 +85,27 @@ export function LeadRow({
           >
             {lead.status}
           </span>
+          {(isFailed || isDead) && (
+            <button
+              type="button"
+              aria-label="Retry lead"
+              disabled={retrying}
+              onClick={async (e) => {
+                e.stopPropagation();
+                setRetrying(true);
+                try {
+                  await retryLead(lead.id);
+                } catch (err) {
+                  console.error(err);
+                } finally {
+                  setRetrying(false);
+                }
+              }}
+              className="text-emerald-600 hover:text-emerald-400 transition-colors disabled:opacity-30"
+            >
+              <RotateCcw className={cn("w-3.5 h-3.5", retrying && "animate-spin")} />
+            </button>
+          )}
           {onDelete && (
             <button
               type="button"

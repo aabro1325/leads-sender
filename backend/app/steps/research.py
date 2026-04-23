@@ -59,6 +59,7 @@ def run(self, lead_id: str) -> str:
     lead = get_lead(lead_id)
     assert lead is not None
     if lead.status == LeadStatus.DEAD:
+        celery_app.send_task("queue.advance")
         return lead_id
 
     set_status(lead_id, LeadStatus.RESEARCHING)

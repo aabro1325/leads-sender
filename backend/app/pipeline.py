@@ -21,17 +21,64 @@ _ACTIVE_STATUSES = {
     LeadStatus.SENDING,
 }
 
+_STEP_TASKS = {
+    "normalize": normalize.run,
+    "permute": permute.run,
+    "verify": verify.run,
+    "research": research.run,
+    "draft": draft.run,
+    "send": send.run,
+}
+_STEP_ORDER = ["normalize", "permute", "verify", "research", "draft", "send"]
+
+
+def _resume_step(lead: Lead) -> str:
+    """Infer which step to resume from based on what data already exists on the lead."""
+    if lead.draft_subject and lead.draft_body:
+        return "send"
+    if lead.research is not None:
+        return "draft"
+    if lead.verified_email:
+        return "research"
+    if lead.candidate_emails:
+        return "verify"
+    if lead.first_name or lead.last_name or lead.company or lead.domain:
+        return "permute"
+    return "normalize"
+
+
+def _start_pipeline_from(lead_id: str, from_step: str) -> None:
+    idx = _STEP_ORDER.index(from_step)
+    remaining = _STEP_ORDER[idx:]
+    tasks = [_STEP_TASKS[remaining[0]].s(lead_id)]
+    tasks += [_STEP_TASKS[s].s() for s in remaining[1:]]
+    chain(*tasks).apply_async(link_error=on_error.s(lead_id))
+
 
 def _start_pipeline(lead_id: str) -> None:
-    workflow = chain(
-        normalize.run.s(lead_id),
-        permute.run.s(),
-        verify.run.s(),
-        research.run.s(),
-        draft.run.s(),
-        send.run.s(),
-    )
-    workflow.apply_async(link_error=on_error.s(lead_id))
+    _start_pipeline_from(lead_id, "normalize")
+
+
+def retry_lead(lead_id: str) -> Lead:
+    from .store import get_lead, update_lead
+
+    lead = get_lead(lead_id)
+    assert lead is not None
+
+    from_step = _resume_step(lead)
+    all_leads = list_leads(limit=500)
+    is_busy = any(l.status in _ACTIVE_STATUSES and l.id != lead_id for l in all_leads)
+
+    if is_busy:
+        update_lead(lead_id, status=LeadStatus.QUEUED)
+        queue_pos = sum(1 for l in all_leads if l.status == LeadStatus.QUEUED) + 1
+        emit(lead_id, "pipeline", f"Retrying from {from_step} — added to queue (position {queue_pos})")
+    else:
+        update_lead(lead_id, status=LeadStatus.PENDING)
+        emit(lead_id, "pipeline", f"Retrying from {from_step}")
+        _start_pipeline_from(lead_id, from_step)
+
+    return get_lead(lead_id)  # type: ignore[return-value]
 
 
 def enqueue_lead(source_md: str) -> Lead:

@@ -10,7 +10,7 @@ from sse_starlette.sse import EventSourceResponse
 from .db import init_db
 from .events import GLOBAL_CHANNEL, LEAD_CHANNEL, subscribe
 from .models import LeadStatus
-from .pipeline import enqueue_lead
+from .pipeline import enqueue_lead, retry_lead
 from .store import delete_lead, get_lead, list_leads
 
 app = FastAPI(title="Lead Sender")
@@ -76,6 +76,17 @@ def api_queue_stats():
             for i, l in enumerate(queued)
         ],
     }
+
+
+@app.post("/api/leads/{lead_id}/retry")
+def api_retry_lead(lead_id: str):
+    lead = get_lead(lead_id)
+    if not lead:
+        raise HTTPException(404, "lead not found")
+    if lead.status not in (LeadStatus.FAILED, LeadStatus.DEAD):
+        raise HTTPException(400, f"lead is {lead.status}, only FAILED or DEAD leads can be retried")
+    updated = retry_lead(lead_id)
+    return updated.model_dump(mode="json")
 
 
 @app.delete("/api/leads/{lead_id}")
